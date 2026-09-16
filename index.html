@@ -18,8 +18,11 @@
         </a>
 
         <nav class="navegacio">
-            <a href="#grafics">Gràfics</a>
+			<a href="#temp">Temperatura</a>
+			<a href="#hum">Humitat</a>
+			<a href="#st">Sensació tèrmica</a>
         </nav>
+		
     </header>
 
     <main>
@@ -88,25 +91,32 @@
                     Tot
                 </button>
             </div>
+			<section id="temp">
+				<div class="grafica">
+					<canvas id="graficaTemperatura"></canvas>
+				</div>
+			</section>
 
-            <div class="grafica">
-                <canvas id="graficaTemperatura"></canvas>
-            </div>
+			<section id="hum">
+				<div class="grafica">
+					<canvas id="graficaHumitat"></canvas>
+				</div>
+			</section>
 
-            <div class="grafica">
-                <canvas id="graficaHumitat"></canvas>
-            </div>
 
-            <div class="grafica">
-                <canvas id="graficaSensacio"></canvas>
-            </div>
+			<section id="st">
+				<div class="grafica">
+					<canvas id="graficaSensacio"></canvas>
+				</div>
+			</section>
 
         </section>
 
     </main>
 
     <footer>
-        <p>π Weather</p>
+        <p>π Weather</p> </br>
+		<p>© 2026 fustcoma</p>
     </footer>
 
     <script src="script.js"></script>
