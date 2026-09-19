@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ca">
 <head>
@@ -7,25 +8,29 @@
     <link rel="icon" type="image/png" href="./images/web-icon.png">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-	<link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
 </head>
 
 <body>
-
     <header class="capcalera">
         <a href="#" class="logo">
-		<picture>
-			<source media="(max-width: 700px)" srcset="./images/big-icon.png">
-			<img src="./images/web-icon.png" alt="π Weather">
-		</picture>
-		</a>
+            <img src="./images/web-icon.png" alt="π Weather">
+        </a>
 
         <nav class="navegacio">
-			<a href="#temp">Temperatura</a>
-			<a href="#hum">Humitat</a>
-			<a href="#st">Sensació tèrmica</a>
+            <a href="#temp">Temperatura</a>
+            <a href="#hum">Humitat</a>
+            <a href="#st">Sensació tèrmica</a>
         </nav>
-		
+
+        <div class="configuracio-unitats">
+            <label for="unitatTemperatura">Temperatura:</label>
+            <select id="unitatTemperatura">
+                <option value="C">°C</option>
+                <option value="F">°F</option>
+                <option value="K">K</option>
+            </select>
+        </div>
     </header>
 
     <main>
@@ -36,6 +41,7 @@
         </section>
 
         <section class="valors-actuals">
+
             <div id="actualitzacio">
                 Última actualització: --
             </div>
@@ -44,14 +50,16 @@
 
                 <div class="targeta">
                     <h2>Temperatura</h2>
+
                     <div class="valor">
                         <span id="temperatura">--</span>
-                        <span class="unitat">ºC</span>
+                        <span id="unitatTemperaturaActual" class="unitat">°C</span>
                     </div>
                 </div>
 
                 <div class="targeta">
                     <h2>Humitat</h2>
+
                     <div class="valor">
                         <span id="humitat">--</span>
                         <span class="unitat">%</span>
@@ -60,9 +68,10 @@
 
                 <div class="targeta">
                     <h2>Sensació tèrmica</h2>
+
                     <div class="valor">
                         <span id="sensacio">--</span>
-                        <span class="unitat">ºC</span>
+                        <span id="unitatSensacioActual" class="unitat">°C</span>
                     </div>
                 </div>
 
@@ -74,6 +83,7 @@
             <h2 class="titol-grafics">Gràfics</h2>
 
             <div class="periodes">
+
                 <button class="periode" data-periode="1h" onclick="canviarPeriode('1h')">
                     1 hora
                 </button>
@@ -93,36 +103,39 @@
                 <button class="periode" data-periode="tot" onclick="canviarPeriode('tot')">
                     Tot
                 </button>
+
             </div>
-			<section id="temp">
-				<div class="grafica">
-					<canvas id="graficaTemperatura"></canvas>
-				</div>
-			</section>
 
-			<section id="hum">
-				<div class="grafica">
-					<canvas id="graficaHumitat"></canvas>
-				</div>
-			</section>
+            <section id="temp">
+                <div class="grafica">
+                    <canvas id="graficaTemperatura"></canvas>
+                </div>
+            </section>
 
+            <section id="hum">
+                <div class="grafica">
+                    <canvas id="graficaHumitat"></canvas>
+                </div>
+            </section>
 
-			<section id="st">
-				<div class="grafica">
-					<canvas id="graficaSensacio"></canvas>
-				</div>
-			</section>
+            <section id="st">
+                <div class="grafica">
+                    <canvas id="graficaSensacio"></canvas>
+                </div>
+            </section>
 
         </section>
 
     </main>
 
     <footer>
-        <p>π Weather</p> </br>
-		<p>© 2026 fustcoma</p>
+        <p>π Weather</p>
+        <br>
+        <p>© 2026 fustcoma</p>
     </footer>
 
     <script src="script.js"></script>
 
 </body>
 </html>
+

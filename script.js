@@ -10,6 +10,60 @@ const SALT_MAXIM = 5 * 60 * 1000;
 
 let ultimaActualitzacio = null;
 
+let unitatTemperatura =
+    localStorage.getItem("unitatTemperatura") || "C";
+
+
+function convertirTemperatura(temperaturaCelsius) {
+    if (unitatTemperatura === "F") {
+        return temperaturaCelsius * 9 / 5 + 32;
+    }
+
+    if (unitatTemperatura === "K") {
+        return temperaturaCelsius + 273.15;
+    }
+
+    return temperaturaCelsius;
+}
+
+
+function obtenirSimbolUnitat() {
+    if (unitatTemperatura === "F") {
+        return "°F";
+    }
+
+    if (unitatTemperatura === "K") {
+        return "K";
+    }
+
+    return "°C";
+}
+
+
+function actualitzarUnitats() {
+    const simbol = obtenirSimbolUnitat();
+
+    const unitatTemperaturaActual =
+        document.getElementById(
+            "unitatTemperaturaActual"
+        );
+
+    const unitatSensacioActual =
+        document.getElementById(
+            "unitatSensacioActual"
+        );
+
+    if (unitatTemperaturaActual) {
+        unitatTemperaturaActual.textContent =
+            simbol;
+    }
+
+    if (unitatSensacioActual) {
+        unitatSensacioActual.textContent =
+            simbol;
+    }
+}
+
 
 async function carregarDades() {
     try {
@@ -24,7 +78,9 @@ async function carregarDades() {
         }
 
         const text = await resposta.text();
-        const linies = text.trim().split(/\r?\n/);
+
+        const linies =
+            text.trim().split(/\r?\n/);
 
         if (linies.length < 4) {
             throw new Error(
@@ -32,27 +88,44 @@ async function carregarDades() {
             );
         }
 
-        const temperatura = parseFloat(linies[0]);
-        const humitat = parseFloat(linies[1]);
-        const sensacio = parseFloat(linies[2]);
-        const dataHoraText = linies[3].trim();
+        const temperatura =
+            parseFloat(linies[0]);
+
+        const humitat =
+            parseFloat(linies[1]);
+
+        const sensacio =
+            parseFloat(linies[2]);
+
+        const dataHoraText =
+            linies[3].trim();
 
         const elementTemperatura =
-            document.getElementById("temperatura");
+            document.getElementById(
+                "temperatura"
+            );
 
         const elementHumitat =
-            document.getElementById("humitat");
+            document.getElementById(
+                "humitat"
+            );
 
         const elementSensacio =
-            document.getElementById("sensacio");
+            document.getElementById(
+                "sensacio"
+            );
+
 
         if (
             elementTemperatura &&
             !isNaN(temperatura)
         ) {
             elementTemperatura.textContent =
-                temperatura.toFixed(2);
+                convertirTemperatura(
+                    temperatura
+                ).toFixed(2);
         }
+
 
         if (
             elementHumitat &&
@@ -62,13 +135,17 @@ async function carregarDades() {
                 humitat.toFixed(2);
         }
 
+
         if (
             elementSensacio &&
             !isNaN(sensacio)
         ) {
             elementSensacio.textContent =
-                sensacio.toFixed(2);
+                convertirTemperatura(
+                    sensacio
+                ).toFixed(2);
         }
+
 
         const dataActualitzacio =
             convertirDataHoraDesDeText(
@@ -122,6 +199,7 @@ async function carregarHistorial() {
 
         const novesDades = [];
 
+
         for (
             let i = 1;
             i < linies.length;
@@ -156,6 +234,7 @@ async function carregarHistorial() {
             const sensacio =
                 parseFloat(parts[4]);
 
+
             if (
                 isNaN(temperatura) ||
                 isNaN(humitat) ||
@@ -164,11 +243,13 @@ async function carregarHistorial() {
                 continue;
             }
 
+
             const dataHora =
                 convertirDataHora(
                     data,
                     hora
                 );
+
 
             if (
                 isNaN(
@@ -177,6 +258,7 @@ async function carregarHistorial() {
             ) {
                 continue;
             }
+
 
             novesDades.push({
                 data: data,
@@ -188,6 +270,7 @@ async function carregarHistorial() {
             });
         }
 
+
         novesDades.sort((a, b) => {
             return (
                 a.dataHora.getTime() -
@@ -195,13 +278,16 @@ async function carregarHistorial() {
             );
         });
 
+
         const haCanviat =
             comprovarCanvis(
                 novesDades
             );
 
+
         dadesHistorial =
             novesDades;
+
 
         if (
             dadesHistorial.length > 0
@@ -216,6 +302,7 @@ async function carregarHistorial() {
 
             actualitzarTextActualitzacio();
         }
+
 
         if (
             haCanviat ||
@@ -241,12 +328,14 @@ function comprovarCanvis(novesDades) {
         return true;
     }
 
+
     if (
         novesDades.length === 0 ||
         dadesHistorial.length === 0
     ) {
         return false;
     }
+
 
     const nova =
         novesDades[
@@ -257,6 +346,7 @@ function comprovarCanvis(novesDades) {
         dadesHistorial[
             dadesHistorial.length - 1
         ];
+
 
     return (
         nova.dataHora.getTime() !==
@@ -281,12 +371,14 @@ function convertirDataHora(data, hora) {
     const partsHora =
         hora.split(":");
 
+
     if (
         partsData.length !== 3 ||
         partsHora.length < 2
     ) {
         return new Date(NaN);
     }
+
 
     const dia =
         parseInt(
@@ -326,6 +418,7 @@ function convertirDataHora(data, hora) {
             )
             : 0;
 
+
     return new Date(
         any,
         mes,
@@ -341,9 +434,11 @@ function convertirDataHoraDesDeText(text) {
     const parts =
         text.trim().split(" ");
 
+
     if (parts.length < 2) {
         return new Date(NaN);
     }
+
 
     return convertirDataHora(
         parts[0],
@@ -358,6 +453,7 @@ function actualitzarTextActualitzacio() {
             "actualitzacio"
         );
 
+
     if (
         !element ||
         !ultimaActualitzacio
@@ -365,36 +461,44 @@ function actualitzarTextActualitzacio() {
         return;
     }
 
+
     const dia =
         String(
             ultimaActualitzacio.getDate()
         ).padStart(2, "0");
+
 
     const mes =
         String(
             ultimaActualitzacio.getMonth() + 1
         ).padStart(2, "0");
 
+
     const any =
         ultimaActualitzacio.getFullYear();
+
 
     const hores =
         String(
             ultimaActualitzacio.getHours()
         ).padStart(2, "0");
 
+
     const minuts =
         String(
             ultimaActualitzacio.getMinutes()
         ).padStart(2, "0");
+
 
     const segons =
         String(
             ultimaActualitzacio.getSeconds()
         ).padStart(2, "0");
 
+
     const ara =
         new Date();
+
 
     const diferencia =
         Math.max(
@@ -407,13 +511,17 @@ function actualitzarTextActualitzacio() {
             )
         );
 
+
     let fa;
+
 
     if (diferencia < 10) {
         fa = "ara mateix";
+
     } else if (diferencia < 60) {
         fa =
             `fa ${diferencia} segons`;
+
     } else if (diferencia < 3600) {
         const minutsFa =
             Math.floor(
@@ -426,6 +534,7 @@ function actualitzarTextActualitzacio() {
                     ? "minut"
                     : "minuts"
             }`;
+
     } else if (diferencia < 86400) {
         const horesFa =
             Math.floor(
@@ -438,6 +547,7 @@ function actualitzarTextActualitzacio() {
                     ? "hora"
                     : "hores"
             }`;
+
     } else {
         const diesFa =
             Math.floor(
@@ -452,6 +562,7 @@ function actualitzarTextActualitzacio() {
             }`;
     }
 
+
     element.textContent =
         `Última actualització: ` +
         `${dia}/${mes}/${any} ` +
@@ -462,6 +573,7 @@ function actualitzarTextActualitzacio() {
 function canviarPeriode(periode) {
     periodeActual = periode;
 
+
     document.querySelectorAll(
         ".periode"
     ).forEach((boto) => {
@@ -470,16 +582,19 @@ function canviarPeriode(periode) {
         );
     });
 
+
     const botoActiu =
         document.querySelector(
             `.periode[data-periode="${periode}"]`
         );
+
 
     if (botoActiu) {
         botoActiu.classList.add(
             "actiu"
         );
     }
+
 
     actualitzarGrafiques();
 }
@@ -492,15 +607,19 @@ function obtenirDadesPeriode() {
         return [];
     }
 
+
     const ultima =
         dadesHistorial[
             dadesHistorial.length - 1
         ];
 
+
     const tempsFinal =
         ultima.dataHora.getTime();
 
+
     let inici;
+
 
     switch (periodeActual) {
         case "1h":
@@ -537,6 +656,7 @@ function obtenirDadesPeriode() {
                 24 * 60 * 60 * 1000;
     }
 
+
     return dadesHistorial.filter(
         (dada) => {
             return (
@@ -554,11 +674,14 @@ function dividirEnSegments(
 ) {
     const segments = [];
 
+
     if (dades.length === 0) {
         return segments;
     }
 
+
     let segmentActual = [];
+
 
     for (
         let i = 0;
@@ -568,6 +691,7 @@ function dividirEnSegments(
         const dada =
             dades[i];
 
+
         if (
             segmentActual.length > 0
         ) {
@@ -576,12 +700,15 @@ function dividirEnSegments(
                     .dataHora
                     .getTime();
 
+
             const actual =
                 dada.dataHora
                     .getTime();
 
+
             const diferencia =
                 actual - anterior;
+
 
             if (
                 diferencia >
@@ -595,11 +722,28 @@ function dividirEnSegments(
             }
         }
 
+
+        let valor =
+            dada[propietat];
+
+
+        if (
+            propietat === "temperatura" ||
+            propietat === "sensacio"
+        ) {
+            valor =
+                convertirTemperatura(
+                    valor
+                );
+        }
+
+
         segmentActual.push({
             x: dada.dataHora.getTime(),
-            y: dada[propietat]
+            y: valor
         });
     }
+
 
     if (
         segmentActual.length > 0
@@ -608,6 +752,7 @@ function dividirEnSegments(
             segmentActual
         );
     }
+
 
     return segments;
 }
@@ -618,46 +763,64 @@ function obtenirEscalaTemperatura(
 ) {
     if (dades.length === 0) {
         return {
-            min: 0,
-            max: 35
+            min: convertirTemperatura(0),
+            max: convertirTemperatura(35)
         };
     }
+
 
     let minim = Infinity;
     let maxim = -Infinity;
 
-    dades.forEach((dada) => {
-        minim = Math.min(
-            minim,
-            dada.temperatura
-        );
 
-        maxim = Math.max(
-            maxim,
-            dada.temperatura
-        );
+    dades.forEach((dada) => {
+        minim =
+            Math.min(
+                minim,
+                dada.temperatura
+            );
+
+        maxim =
+            Math.max(
+                maxim,
+                dada.temperatura
+            );
     });
 
-    let min = 0;
-    let max = 35;
+
+    /*
+     * L'escala base es calcula en °C.
+     *
+     * Després convertim els límits
+     * a la unitat seleccionada.
+     *
+     * Això evita que la conversió
+     * faci escales estranyes en °F o K.
+     */
+
+    let minC = 0;
+    let maxC = 35;
+
 
     if (minim < 0) {
-        min =
+        minC =
             Math.floor(
                 (minim - 5) / 5
             ) * 5;
     }
 
+
     if (maxim > 30) {
-        max =
+        maxC =
             Math.ceil(
                 (maxim + 5) / 5
             ) * 5;
     }
 
+
     return {
-        min: min,
-        max: max
+        min: convertirTemperatura(minC),
+        max: convertirTemperatura(maxC)
     };
 }
 
@@ -667,46 +830,59 @@ function obtenirEscalaSensacio(
 ) {
     if (dades.length === 0) {
         return {
-            min: 0,
-            max: 35
+            min: convertirTemperatura(0),
+            max: convertirTemperatura(35)
         };
     }
+
 
     let minim = Infinity;
     let maxim = -Infinity;
 
-    dades.forEach((dada) => {
-        minim = Math.min(
-            minim,
-            dada.sensacio
-        );
 
-        maxim = Math.max(
-            maxim,
-            dada.sensacio
-        );
+    dades.forEach((dada) => {
+        minim =
+            Math.min(
+                minim,
+                dada.sensacio
+            );
+
+        maxim =
+            Math.max(
+                maxim,
+                dada.sensacio
+            );
     });
 
-    let min = 0;
-    let max = 35;
+
+    /*
+     * Igual que amb la temperatura,
+     * primer calculem l'escala en °C.
+     */
+
+    let minC = 0;
+    let maxC = 35;
+
 
     if (minim < 0) {
-        min =
+        minC =
             Math.floor(
                 (minim - 5) / 5
             ) * 5;
     }
 
+
     if (maxim > 30) {
-        max =
+        maxC =
             Math.ceil(
                 (maxim + 5) / 5
             ) * 5;
     }
 
+
     return {
-        min: min,
-        max: max
+        min: convertirTemperatura(minC),
+        max: convertirTemperatura(maxC)
     };
 }
 
@@ -717,33 +893,40 @@ function obtenirFormatTooltip(
     const data =
         new Date(timestamp);
 
+
     const dia =
         String(
             data.getDate()
         ).padStart(2, "0");
+
 
     const mes =
         String(
             data.getMonth() + 1
         ).padStart(2, "0");
 
+
     const any =
         data.getFullYear();
+
 
     const hores =
         String(
             data.getHours()
         ).padStart(2, "0");
 
+
     const minuts =
         String(
             data.getMinutes()
         ).padStart(2, "0");
 
+
     const segons =
         String(
             data.getSeconds()
         ).padStart(2, "0");
+
 
     if (
         periodeActual === "1h" ||
@@ -754,6 +937,7 @@ function obtenirFormatTooltip(
         );
     }
 
+
     if (
         periodeActual === "24h"
     ) {
@@ -762,6 +946,7 @@ function obtenirFormatTooltip(
             `${hores}:${minuts}:${segons}`
         );
     }
+
 
     return (
         `${dia}/${mes}/${any} ` +
@@ -776,25 +961,30 @@ function obtenirFormatEix(
     const data =
         new Date(timestamp);
 
+
     const dia =
         String(
             data.getDate()
         ).padStart(2, "0");
+
 
     const mes =
         String(
             data.getMonth() + 1
         ).padStart(2, "0");
 
+
     const hores =
         String(
             data.getHours()
         ).padStart(2, "0");
 
+
     const minuts =
         String(
             data.getMinutes()
         ).padStart(2, "0");
+
 
     if (
         periodeActual === "1h" ||
@@ -805,6 +995,7 @@ function obtenirFormatEix(
         );
     }
 
+
     if (
         periodeActual === "24h"
     ) {
@@ -813,6 +1004,7 @@ function obtenirFormatEix(
             `${hores}:${minuts}`
         );
     }
+
 
     return `${dia}/${mes}`;
 }
@@ -824,9 +1016,11 @@ function formatarNumero(
     const numero =
         Number(valor);
 
+
     if (isNaN(numero)) {
         return "--";
     }
+
 
     return numero.toFixed(2);
 }
@@ -845,6 +1039,7 @@ function crearConfiguracioGrafica(
             dades,
             propietat
         );
+
 
     const datasets =
         segments.map(
@@ -872,14 +1067,17 @@ function crearConfiguracioGrafica(
             }
         );
 
+
     let minX;
     let maxX;
+
 
     if (dades.length > 0) {
         minX =
             dades[0]
                 .dataHora
                 .getTime();
+
 
         maxX =
             dades[
@@ -889,7 +1087,9 @@ function crearConfiguracioGrafica(
                 .getTime();
     }
 
+
     let escalaY;
+
 
     if (
         tipusGrafica ===
@@ -899,6 +1099,7 @@ function crearConfiguracioGrafica(
             obtenirEscalaTemperatura(
                 dades
             );
+
     } else if (
         tipusGrafica ===
         "sensacio"
@@ -907,6 +1108,7 @@ function crearConfiguracioGrafica(
             obtenirEscalaSensacio(
                 dades
             );
+
     } else {
         escalaY = {
             min: 0,
@@ -914,23 +1116,29 @@ function crearConfiguracioGrafica(
         };
     }
 
+
     return {
         type: "line",
+
 
         data: {
             datasets: datasets
         },
 
+
         options: {
             responsive: true,
+
             maintainAspectRatio: false,
 
             animation: false,
+
 
             interaction: {
                 mode: "nearest",
                 intersect: false
             },
+
 
             plugins: {
                 title: {
@@ -948,9 +1156,11 @@ function crearConfiguracioGrafica(
                     }
                 },
 
+
                 legend: {
                     display: false
                 },
+
 
                 tooltip: {
                     callbacks: {
@@ -963,6 +1173,7 @@ function crearConfiguracioGrafica(
                                 return "";
                             }
 
+
                             return (
                                 obtenirFormatTooltip(
                                     context[0]
@@ -971,6 +1182,7 @@ function crearConfiguracioGrafica(
                                 )
                             );
                         },
+
 
                         label: function(
                             context
@@ -987,6 +1199,7 @@ function crearConfiguracioGrafica(
                 }
             },
 
+
             scales: {
                 x: {
                     type: "linear",
@@ -995,6 +1208,7 @@ function crearConfiguracioGrafica(
                     max: maxX,
 
                     offset: false,
+
 
                     ticks: {
                         maxTicksLimit:
@@ -1005,6 +1219,7 @@ function crearConfiguracioGrafica(
                                     : periodeActual === "24h"
                                         ? 8
                                         : 10,
+
 
                         callback: function(
                             value
@@ -1018,12 +1233,14 @@ function crearConfiguracioGrafica(
                     }
                 },
 
+
                 y: {
                     min:
                         escalaY.min,
 
                     max:
                         escalaY.max,
+
 
                     ticks: {
                         callback: function(
@@ -1049,32 +1266,39 @@ function actualitzarGrafiques() {
     const dades =
         obtenirDadesPeriode();
 
+
     if (graficaTemperatura) {
         graficaTemperatura.destroy();
     }
+
 
     if (graficaHumitat) {
         graficaHumitat.destroy();
     }
 
+
     if (graficaSensacio) {
         graficaSensacio.destroy();
     }
+
 
     const canvasTemperatura =
         document.getElementById(
             "graficaTemperatura"
         );
 
+
     const canvasHumitat =
         document.getElementById(
             "graficaHumitat"
         );
 
+
     const canvasSensacio =
         document.getElementById(
             "graficaSensacio"
         );
+
 
     if (
         !canvasTemperatura ||
@@ -1084,20 +1308,24 @@ function actualitzarGrafiques() {
         return;
     }
 
+
     const contextTemperatura =
         canvasTemperatura.getContext(
             "2d"
         );
+
 
     const contextHumitat =
         canvasHumitat.getContext(
             "2d"
         );
 
+
     const contextSensacio =
         canvasSensacio.getContext(
             "2d"
         );
+
 
     graficaTemperatura =
         new Chart(
@@ -1106,11 +1334,12 @@ function actualitzarGrafiques() {
                 "Temperatura",
                 dades,
                 "temperatura",
-                "ºC",
+                obtenirSimbolUnitat(),
                 "temperatura",
                 "#ff6384"
             )
         );
+
 
     graficaHumitat =
         new Chart(
@@ -1125,6 +1354,7 @@ function actualitzarGrafiques() {
             )
         );
 
+
     graficaSensacio =
         new Chart(
             contextSensacio,
@@ -1132,7 +1362,7 @@ function actualitzarGrafiques() {
                 "Sensació tèrmica",
                 dades,
                 "sensacio",
-                "ºC",
+                obtenirSimbolUnitat(),
                 "sensacio",
                 "#ff9f40"
             )
@@ -1140,7 +1370,44 @@ function actualitzarGrafiques() {
 }
 
 
+const selectorUnitat =
+    document.getElementById(
+        "unitatTemperatura"
+    );
+
+
+if (selectorUnitat) {
+    selectorUnitat.value =
+        unitatTemperatura;
+
+
+    selectorUnitat.addEventListener(
+        "change",
+        function() {
+            unitatTemperatura =
+                this.value;
+
+
+            localStorage.setItem(
+                "unitatTemperatura",
+                unitatTemperatura
+            );
+
+
+            actualitzarUnitats();
+
+            carregarDades();
+
+            actualitzarGrafiques();
+        }
+    );
+}
+
+
+actualitzarUnitats();
+
 carregarDades();
+
 carregarHistorial();
 
 
