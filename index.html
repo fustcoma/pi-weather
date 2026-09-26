@@ -1,144 +1,275 @@
-
 <!DOCTYPE html>
+
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>π Weather</title>
-    <link rel="icon" type="image/png" href="./images/web-icon.png">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+
+
+<title>π Weather</title>
+
+<link rel="icon" type="image/png" href="./images/web-icon.png">
+<link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
 </head>
 
 <body>
-    <header class="capcalera">
-        <a href="#" class="logo">
-            <picture>
-			<source media="(max-width: 700px)" srcset="./images/big-icon.png">
-			<img src="./images/web-icon.png" alt="π Weather">
-		</picture>
-		</a>
 
-        <nav class="navegacio">
-            <a href="#temp">Temperatura</a>
-            <a href="#hum">Humitat</a>
-            <a href="#st">Sensació tèrmica</a>
-        </nav>
+
+<header class="capcalera">
+
+    <a href="#" class="logo">
+        <picture>
+            <source
+                media="(max-width: 700px)"
+                srcset="./images/big-icon.png"
+            >
+            <img
+                src="./images/web-icon.png"
+                alt="π Weather"
+            >
+        </picture>
+    </a>
+
+    <nav class="navegacio">
+        <a href="#temp">Temperatura</a>
+        <a href="#hum">Humitat</a>
+        <a href="#st">Sensació tèrmica</a>
+        <a href="#vent">Vent</a>
+    </nav>
+
+    <div class="configuracions-unitats">
 
         <div class="configuracio-unitats">
-            <label for="unitatTemperatura">Temperatura:</label>
+            <label for="unitatTemperatura">
+                Temperatura:
+            </label>
+
             <select id="unitatTemperatura">
                 <option value="C">°C</option>
                 <option value="F">°F</option>
                 <option value="K">K</option>
             </select>
         </div>
-    </header>
 
-    <main>
+        <div class="configuracio-unitats">
+            <label for="unitatVent">
+                Vent:
+            </label>
 
-        <section class="introduccio">
-            <h1>π Weather</h1>
-            <p>Estació meteorològica amb Raspberry Pi Zero W i DHT11</p>
-        </section>
+            <select id="unitatVent">
+                <option value="kmh">km/h</option>
+                <option value="ms">m/s</option>
+                <option value="mach">Mach</option>
+            </select>
+        </div>
 
-        <section class="valors-actuals">
+    </div>
 
-            <div id="actualitzacio">
-                Última actualització: --
-            </div>
+</header>
 
-            <div class="targetes">
 
-                <div class="targeta">
-                    <h2>Temperatura</h2>
+<main>
 
-                    <div class="valor">
-                        <span id="temperatura">--</span>
-                        <span id="unitatTemperaturaActual" class="unitat">°C</span>
-                    </div>
+    <section class="introduccio">
+
+        <h1>π Weather</h1>
+
+        <p>
+            Estació meteorològica amb Raspberry Pi Zero W i DHT11
+        </p>
+
+    </section>
+
+
+    <section class="valors-actuals">
+
+        <div id="actualitzacio">
+            Última actualització: --
+        </div>
+
+
+        <div class="targetes">
+
+            <div class="targeta">
+
+                <h2>Temperatura</h2>
+
+                <div class="valor">
+                    <span id="temperatura">--</span>
+                    <span
+                        id="unitatTemperaturaActual"
+                        class="unitat"
+                    >
+                        °C
+                    </span>
                 </div>
-
-                <div class="targeta">
-                    <h2>Humitat</h2>
-
-                    <div class="valor">
-                        <span id="humitat">--</span>
-                        <span class="unitat">%</span>
-                    </div>
-                </div>
-
-                <div class="targeta">
-                    <h2>Sensació tèrmica</h2>
-
-                    <div class="valor">
-                        <span id="sensacio">--</span>
-                        <span id="unitatSensacioActual" class="unitat">°C</span>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <section id="grafics" class="seccio-grafics">
-
-            <h2 class="titol-grafics">Gràfics</h2>
-
-            <div class="periodes">
-
-                <button class="periode" data-periode="1h" onclick="canviarPeriode('1h')">
-                    1 hora
-                </button>
-
-                <button class="periode" data-periode="6h" onclick="canviarPeriode('6h')">
-                    6 hores
-                </button>
-
-                <button class="periode actiu" data-periode="24h" onclick="canviarPeriode('24h')">
-                    24 hores
-                </button>
-
-                <button class="periode" data-periode="7d" onclick="canviarPeriode('7d')">
-                    7 dies
-                </button>
-
-                <button class="periode" data-periode="tot" onclick="canviarPeriode('tot')">
-                    Tot
-                </button>
 
             </div>
 
-            <section id="temp">
-                <div class="grafica">
-                    <canvas id="graficaTemperatura"></canvas>
-                </div>
-            </section>
 
-            <section id="hum">
-                <div class="grafica">
-                    <canvas id="graficaHumitat"></canvas>
-                </div>
-            </section>
+            <div class="targeta">
 
-            <section id="st">
-                <div class="grafica">
-                    <canvas id="graficaSensacio"></canvas>
+                <h2>Humitat</h2>
+
+                <div class="valor">
+                    <span id="humitat">--</span>
+                    <span class="unitat">%</span>
                 </div>
-            </section>
+
+            </div>
+
+
+            <div class="targeta">
+
+                <h2>Sensació tèrmica</h2>
+
+                <div class="valor">
+                    <span id="sensacio">--</span>
+                    <span
+                        id="unitatSensacioActual"
+                        class="unitat"
+                    >
+                        °C
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="targeta">
+
+                <h2>Vent</h2>
+
+                <div class="valor">
+                    <span id="vent">--</span>
+                    <span
+                        id="unitatVentActual"
+                        class="unitat"
+                    >
+                        km/h
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section id="grafics" class="seccio-grafics">
+
+        <h2 class="titol-grafics">
+            Gràfics
+        </h2>
+
+
+        <div class="periodes">
+
+            <button
+                class="periode"
+                data-periode="1h"
+                onclick="canviarPeriode('1h')"
+            >
+                1 hora
+            </button>
+
+            <button
+                class="periode"
+                data-periode="6h"
+                onclick="canviarPeriode('6h')"
+            >
+                6 hores
+            </button>
+
+            <button
+                class="periode actiu"
+                data-periode="24h"
+                onclick="canviarPeriode('24h')"
+            >
+                24 hores
+            </button>
+
+            <button
+                class="periode"
+                data-periode="7d"
+                onclick="canviarPeriode('7d')"
+            >
+                7 dies
+            </button>
+
+            <button
+                class="periode"
+                data-periode="tot"
+                onclick="canviarPeriode('tot')"
+            >
+                Tot
+            </button>
+
+        </div>
+
+
+        <section id="temp">
+
+            <div class="grafica">
+                <canvas id="graficaTemperatura"></canvas>
+            </div>
 
         </section>
 
-    </main>
 
-    <footer>
-        <p>π Weather</p>
-        <br>
-        <p>© 2026 fustcoma</p>
-    </footer>
+        <section id="hum">
 
-    <script src="script.js"></script>
+            <div class="grafica">
+                <canvas id="graficaHumitat"></canvas>
+            </div>
+
+        </section>
+
+
+        <section id="st">
+
+            <div class="grafica">
+                <canvas id="graficaSensacio"></canvas>
+            </div>
+
+        </section>
+
+
+        <section id="vent">
+
+            <div class="grafica grafica-vent">
+
+                <canvas id="graficaVent"></canvas>
+
+            </div>
+
+        </section>
+
+    </section>
+
+</main>
+
+
+<footer>
+
+    <p>π Weather</p>
+
+    <br>
+
+    <p>© 2026 fustcoma</p>
+
+</footer>
+
+
+<script src="script.js"></script>
+
 
 </body>
 </html>
-
