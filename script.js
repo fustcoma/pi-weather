@@ -352,9 +352,7 @@ if (isNaN(valor)) {
 
 
 elementVent.textContent =
-    valor.toFixed(
-        obtenirDecimalsVent()
-    );
+    Math.floor(valor * 10000) / 10000
 
 }
 
