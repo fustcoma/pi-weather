@@ -1,5 +1,5 @@
 {
-    "name": "π Weather",
+    "name": "Pi Weather",
     "short_name": "π Weather",
     "description": "Estació meteorològica amb Raspberry Pi Zero W i DHT11",
     "start_url": "./",
