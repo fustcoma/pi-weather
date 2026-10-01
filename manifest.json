@@ -1,0 +1,22 @@
+{
+    "name": "π Weather",
+    "short_name": "π Weather",
+    "description": "Estació meteorològica amb Raspberry Pi Zero W i DHT11",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#111111",
+    "theme_color": "#181818",
+    "icons": [
+        {
+            "src": "./images/web-icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "./images/web-icon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
