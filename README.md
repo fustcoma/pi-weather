@@ -1435,3 +1435,5 @@ Aquest projecte està publicat sota la **llicència MIT**.
 ## Autor
 
 Creat per **fustcoma**.
+
+Anemòmetre creat per [**alf45tar**](https://github.com/alf45tar/Anemometer)
