@@ -440,6 +440,10 @@ try {
 
         const sensacio =
             parseFloat(parts[4]);
+		
+		const vent = parts.length >= 6
+			? parseFloat(parts[5])
+			: null;
 
 
         if (
@@ -484,6 +488,7 @@ try {
 
             dataHora:
                 dataHora
+			vent: vent,
         });
     }
 
@@ -547,53 +552,50 @@ try {
 // COMPROVAR CANVIS
 // =========================
 
+
 function comprovarCanvis(novesDades) {
+    if (
+        novesDades.length !==
+        dadesHistorial.length
+    ) {
+        return true;
+    }
 
-if (
-    novesDades.length !==
-    dadesHistorial.length
-) {
-    return true;
+    if (
+        novesDades.length === 0 ||
+        dadesHistorial.length === 0
+    ) {
+        return false;
+    }
+
+    const nova =
+        novesDades[
+            novesDades.length - 1
+        ];
+
+    const antiga =
+        dadesHistorial[
+            dadesHistorial.length - 1
+        ];
+
+    return (
+        nova.dataHora.getTime() !==
+            antiga.dataHora.getTime() ||
+
+        nova.temperatura !==
+            antiga.temperatura ||
+
+        nova.humitat !==
+            antiga.humitat ||
+
+        nova.sensacio !==
+            antiga.sensacio ||
+
+        nova.vent !==
+            antiga.vent
+    );
 }
 
-
-if (
-    novesDades.length === 0 ||
-    dadesHistorial.length === 0
-) {
-    return false;
-}
-
-
-const nova =
-    novesDades[
-        novesDades.length - 1
-    ];
-
-
-const antiga =
-    dadesHistorial[
-        dadesHistorial.length - 1
-    ];
-
-
-return (
-
-    nova.dataHora.getTime() !==
-        antiga.dataHora.getTime() ||
-
-    nova.temperatura !==
-        antiga.temperatura ||
-
-    nova.humitat !==
-        antiga.humitat ||
-
-    nova.sensacio !==
-        antiga.sensacio
-);
-
-
-}
 
 // =========================
 // DATES

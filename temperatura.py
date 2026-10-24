@@ -1,3 +1,4 @@
+
 import board
 import adafruit_dht
 import time
@@ -5,16 +6,17 @@ import math
 import csv
 import os
 import subprocess
+
 from datetime import datetime
+from anemometre import obtenir_polsos, calcular_velocitat
 
 
 # =========================
-# CONFIGURACIÓ
+# CONFIGURACIO
 # =========================
 
 DURADA_MESURA = 60
 INTERVAL_LECTURA = 2
-
 INTERVAL_PUSH = 300
 
 FITXER_ACTUAL = "pi.txt"
@@ -22,18 +24,16 @@ FITXER_HISTORIAL = "historial.csv"
 
 DHT_PIN = board.D2
 
-VENT_KMH = 5.0
-
 
 # =========================
-# SENSOR
+# SENSOR DHT11
 # =========================
 
 dht = adafruit_dht.DHT11(DHT_PIN)
 
 
 # =========================
-# SENSACIÓ TÈRMICA
+# SENSACIO TERMICA
 # =========================
 
 def calcular_sensacio(temperatura, humitat):
@@ -53,6 +53,16 @@ def calcular_sensacio(temperatura, humitat):
 # HISTORIAL
 # =========================
 
+CAPCALERA_HISTORIAL = [
+    "data",
+    "hora",
+    "temperatura",
+    "humitat",
+    "sensacio",
+    "vent"
+]
+
+
 def crear_historial_si_no_existeix():
     if not os.path.exists(FITXER_HISTORIAL):
         with open(
@@ -61,25 +71,82 @@ def crear_historial_si_no_existeix():
             newline="",
             encoding="utf-8"
         ) as fitxer:
-
             escriptor = csv.writer(fitxer)
+            escriptor.writerow(CAPCALERA_HISTORIAL)
 
-            escriptor.writerow([
-                "data",
-                "hora",
-                "temperatura",
-                "humitat",
-                "sensacio"
-            ])
+
+def adaptar_historial():
+    """
+    Afegeix la columna vent a un historial antic
+    sense eliminar les dades existents.
+    """
+
+    crear_historial_si_no_existeix()
+
+    with open(
+        FITXER_HISTORIAL,
+        "r",
+        newline="",
+        encoding="utf-8"
+    ) as fitxer:
+        files = list(csv.reader(fitxer))
+
+    if not files:
+        files = [CAPCALERA_HISTORIAL]
+
+    capcalera = files[0]
+
+    if capcalera == CAPCALERA_HISTORIAL:
+        return
+
+    if capcalera[:5] != CAPCALERA_HISTORIAL[:5]:
+        raise ValueError(
+            "La capcalera de historial.csv "
+            "no te el format esperat."
+        )
+
+    files_noves = [CAPCALERA_HISTORIAL]
+
+    for fila in files[1:]:
+        if len(fila) < 5:
+            continue
+
+        fila_nova = fila[:5]
+
+        if len(fila) >= 6:
+            fila_nova.append(fila[5])
+        else:
+            # Les mesures antigues no tenen
+            # dades de vent.
+            fila_nova.append("")
+
+        files_noves.append(fila_nova)
+
+    fitxer_temporal = FITXER_HISTORIAL + ".tmp"
+
+    with open(
+        fitxer_temporal,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as fitxer:
+        escriptor = csv.writer(fitxer)
+        escriptor.writerows(files_noves)
+
+    os.replace(
+        fitxer_temporal,
+        FITXER_HISTORIAL
+    )
 
 
 def guardar_historial(
     temperatura,
     humitat,
     sensacio,
+    vent,
     moment
 ):
-    crear_historial_si_no_existeix()
+    adaptar_historial()
 
     with open(
         FITXER_HISTORIAL,
@@ -87,7 +154,6 @@ def guardar_historial(
         newline="",
         encoding="utf-8"
     ) as fitxer:
-
         escriptor = csv.writer(fitxer)
 
         escriptor.writerow([
@@ -95,12 +161,13 @@ def guardar_historial(
             moment.strftime("%H:%M:%S"),
             f"{temperatura:.2f}",
             f"{humitat:.2f}",
-            f"{sensacio:.2f}"
+            f"{sensacio:.2f}",
+            f"{vent:.2f}"
         ])
 
 
 # =========================
-# DADA ACTUAL
+# DADES ACTUALS
 # =========================
 
 def guardar_actual(
@@ -115,27 +182,12 @@ def guardar_actual(
         "w",
         encoding="utf-8"
     ) as fitxer:
-
+        fitxer.write(f"{temperatura:.2f}\n")
+        fitxer.write(f"{humitat:.2f}\n")
+        fitxer.write(f"{sensacio:.2f}\n")
+        fitxer.write(f"{vent:.2f}\n")
         fitxer.write(
-            f"{temperatura:.2f}\n"
-        )
-
-        fitxer.write(
-            f"{humitat:.2f}\n"
-        )
-
-        fitxer.write(
-            f"{sensacio:.2f}\n"
-        )
-
-        fitxer.write(
-            f"{vent:.2f}\n"
-        )
-
-        fitxer.write(
-            moment.strftime(
-                "%d/%m/%Y %H:%M:%S"
-            )
+            moment.strftime("%d/%m/%Y %H:%M:%S")
         )
 
 
@@ -162,7 +214,7 @@ def pujar_github():
                 "git",
                 "commit",
                 "-m",
-                "Actualització dades meteorològiques"
+                "Actualitzacio dades meteorologiques"
             ],
             capture_output=True,
             text=True
@@ -171,10 +223,7 @@ def pujar_github():
         if resultat_commit.returncode == 0:
             print("Canvis preparats per pujar.")
         else:
-            print(
-                "No hi ha canvis nous "
-                "per crear un commit."
-            )
+            print("No hi ha canvis nous per crear un commit.")
 
         resultat_push = subprocess.run(
             ["git", "push"],
@@ -192,10 +241,7 @@ def pujar_github():
         return False
 
     except Exception as error:
-        print(
-            f"Error amb GitHub: {error}"
-        )
-
+        print(f"Error amb GitHub: {error}")
         return False
 
 
@@ -203,166 +249,141 @@ def pujar_github():
 # PROGRAMA PRINCIPAL
 # =========================
 
-crear_historial_si_no_existeix()
+adaptar_historial()
 
-ultim_push = time.time()
+ultim_push = time.monotonic()
 
-print(
-    "Estació meteorològica iniciada."
-)
-
-
-while True:
-
-    temperatures = []
-    humitats = []
-
-    inici = time.time()
-
-    print(
-        "Començant una nova mesura."
-    )
+print("Estacio meteorologica iniciada.")
+print("Anemometre connectat al GPIO 8.")
 
 
-    while time.time() - inici < DURADA_MESURA:
+try:
+    while True:
+        temperatures = []
+        humitats = []
 
-        try:
+        # Comencem a comptar el vent
+        # abans de la primera lectura.
+        polsos_inicials = obtenir_polsos()
+        inici = time.monotonic()
 
-            temperatura = dht.temperature
-            humitat = dht.humidity
+        print("Comencant una nova mesura.")
 
-            if (
-                temperatura is not None
-                and humitat is not None
-            ):
+        while time.monotonic() - inici < DURADA_MESURA:
+            try:
+                temperatura = dht.temperature
+                humitat = dht.humidity
 
-                temperatures.append(
-                    temperatura
-                )
+                if (
+                    temperatura is not None
+                    and humitat is not None
+                ):
+                    temperatures.append(temperatura)
+                    humitats.append(humitat)
 
-                humitats.append(
-                    humitat
-                )
+                    print(
+                        f"Lectura: {temperatura:.2f} C, "
+                        f"{humitat:.2f} %"
+                    )
 
+            except RuntimeError as error:
                 print(
-                    f"Lectura: "
-                    f"{temperatura:.2f} C, "
-                    f"{humitat:.2f} %"
+                    f"Error temporal del DHT11: {error}"
                 )
 
-        except RuntimeError as error:
+            except Exception as error:
+                print(f"Error del sensor: {error}")
 
-            print(
-                "Error temporal del sensor: "
-                f"{error}"
+            temps_rest = (
+                DURADA_MESURA
+                - (time.monotonic() - inici)
             )
 
-        except Exception as error:
+            if temps_rest > 0:
+                time.sleep(
+                    min(INTERVAL_LECTURA, temps_rest)
+                )
 
-            print(
-                "Error del sensor: "
-                f"{error}"
+        # Calculem la velocitat mitjana
+        # durant el mateix interval de mesura.
+        durada_vent = time.monotonic() - inici
+        polsos_finals = obtenir_polsos()
+
+        polsos_vent = (
+            polsos_finals - polsos_inicials
+        )
+
+        vent_kmh = calcular_velocitat(
+            polsos_vent,
+            durada_vent
+        )
+
+        if temperatures and humitats:
+            temperatura_mitjana = (
+                sum(temperatures) / len(temperatures)
             )
 
-        time.sleep(
-            INTERVAL_LECTURA
-        )
+            humitat_mitjana = (
+                sum(humitats) / len(humitats)
+            )
 
+            sensacio = calcular_sensacio(
+                temperatura_mitjana,
+                humitat_mitjana
+            )
 
-    if temperatures and humitats:
+            moment = datetime.now()
 
-        temperatura_mitjana = (
-            sum(temperatures) /
-            len(temperatures)
-        )
+            print()
+            print("Resultat de la mesura:")
+            print(
+                f"Temperatura: "
+                f"{temperatura_mitjana:.2f} C"
+            )
+            print(f"Humitat: {humitat_mitjana:.2f} %")
+            print(f"Sensacio: {sensacio:.2f} C")
+            print(f"Vent: {vent_kmh:.2f} km/h")
+            print(f"Polsos de vent: {polsos_vent}")
+            print(
+                f"Hora: {moment.strftime('%d/%m/%Y %H:%M:%S')}"
+            )
 
-        humitat_mitjana = (
-            sum(humitats) /
-            len(humitats)
-        )
+            guardar_actual(
+                temperatura_mitjana,
+                humitat_mitjana,
+                sensacio,
+                vent_kmh,
+                moment
+            )
 
-        sensacio = calcular_sensacio(
-            temperatura_mitjana,
-            humitat_mitjana
-        )
+            guardar_historial(
+                temperatura_mitjana,
+                humitat_mitjana,
+                sensacio,
+                vent_kmh,
+                moment
+            )
 
-        moment = datetime.now()
+            print("Dades guardades.")
 
+        else:
+            print(
+                "No s'han pogut obtenir "
+                "dades suficients del DHT11."
+            )
+
+        if (
+            time.monotonic() - ultim_push
+            >= INTERVAL_PUSH
+        ):
+            pujar_github()
+            ultim_push = time.monotonic()
+
+        print("Esperant la seguent mesura.")
         print()
-        print(
-            "Resultat de la mesura:"
-        )
 
-        print(
-            f"Temperatura: "
-            f"{temperatura_mitjana:.2f} C"
-        )
+except KeyboardInterrupt:
+    print("Aturant l'estacio meteorologica.")
 
-        print(
-            f"Humitat: "
-            f"{humitat_mitjana:.2f} %"
-        )
-
-        print(
-            f"Sensació: "
-            f"{sensacio:.2f} C"
-        )
-
-        print(
-            f"Vent: "
-            f"{VENT_KMH:.2f} km/h"
-        )
-
-        print(
-            f"Hora: "
-            f"{moment.strftime('%d/%m/%Y %H:%M:%S')}"
-        )
-
-
-        guardar_actual(
-            temperatura_mitjana,
-            humitat_mitjana,
-            sensacio,
-            VENT_KMH,
-            moment
-        )
-
-
-        guardar_historial(
-            temperatura_mitjana,
-            humitat_mitjana,
-            sensacio,
-            moment
-        )
-
-
-        print(
-            "Dades guardades."
-        )
-
-    else:
-
-        print(
-            "No s'han pogut obtenir "
-            "dades suficients."
-        )
-
-
-    if (
-        time.time() - ultim_push >=
-        INTERVAL_PUSH
-    ):
-
-        pujar_github()
-
-        ultim_push = time.time()
-
-
-    print(
-        "Esperant la següent mesura."
-    )
-
-    print()
-
-    time.sleep(10)
-
+finally:
+    dht.exit()

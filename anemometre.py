@@ -1,47 +1,68 @@
 
 import time
 from threading import Lock
+
 from gpiozero import Button
 
-# GPIO 8 (BCM), pin fisic 24
+
+# =========================
+# CONFIGURACIO
+# =========================
+
 REED_PIN = 8
 
-# Constants inicials de calibratge
+# Valors inicials de calibratge.
+# Cal ajustar-los per al teu anemometre.
 POLSOS_PER_VOLTA = 2.0
 RADI_METRES = 0.078
 FACTOR_CALIBRATGE = 2.5
 
-# Protegeix el comptador quan hi ha lectures simultanies
+# Temps minim entre activacions del reed.
+ANTI_REBOT_SEGONS = 0.01
+
+
+# =========================
+# COMPTADOR DE POLSOS
+# =========================
+
 _polsos = 0
 _bloqueig = Lock()
 
-reed = Button(
-    REED_PIN,
-    pull_up=True,
-    bounce_time=0.01
-)
 
-
-def pols_detectat():
+def _pols_detectat():
     global _polsos
 
     with _bloqueig:
         _polsos += 1
 
 
-reed.when_pressed = pols_detectat
+reed = Button(
+    REED_PIN,
+    pull_up=True,
+    bounce_time=ANTI_REBOT_SEGONS
+)
+
+reed.when_pressed = _pols_detectat
 
 
 def obtenir_polsos():
+    """Retorna el nombre acumulat de polsos."""
     with _bloqueig:
         return _polsos
 
 
+# =========================
+# CALCUL DE VELOCITAT
+# =========================
+
 def calcular_velocitat(polsos, durada):
-    if durada <= 0:
+    """Calcula la velocitat mitjana del vent en km/h."""
+
+    if durada <= 0 or polsos <= 0:
         return 0.0
 
     polsos_per_segon = polsos / durada
+
     voltes_per_segon = (
         polsos_per_segon / POLSOS_PER_VOLTA
     )
@@ -58,17 +79,22 @@ def calcular_velocitat(polsos, durada):
 
 
 def mesurar_vent(durada=60):
+    """
+    Mesura el vent durant l'interval indicat.
+    Retorna la velocitat mitjana en km/h.
+    """
+
     polsos_inicials = obtenir_polsos()
     inici = time.monotonic()
 
     time.sleep(durada)
 
-    temps_transcorregut = time.monotonic() - inici
+    durada_real = time.monotonic() - inici
     polsos_finals = obtenir_polsos()
 
     polsos = polsos_finals - polsos_inicials
 
     return calcular_velocitat(
         polsos,
-        temps_transcorregut
+        durada_real
     )
