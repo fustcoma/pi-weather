@@ -352,7 +352,7 @@ if (isNaN(valor)) {
 
 
 elementVent.textContent =
-    Math.floor(valor * 10000) / 10000
+    valor.toFixed(obtenirDecimalsVent());
 
 }
 
@@ -993,6 +993,24 @@ for (
     const dada =
         dades[i];
 
+    // Les dades de vent antigues poden no tenir velocitat.
+    // Es trenquen els segments per no dibuixar línies a través de valors absents.
+    if (
+        propietat === "vent" &&
+        (
+            dada[propietat] === null ||
+            dada[propietat] === undefined ||
+            !Number.isFinite(Number(dada[propietat]))
+        )
+    ) {
+        if (segmentActual.length > 0) {
+            segments.push(segmentActual);
+            segmentActual = [];
+        }
+
+        continue;
+    }
+
 
     if (
         segmentActual.length > 0
@@ -1040,6 +1058,8 @@ for (
             convertirTemperatura(
                 valor
             );
+    } else if (propietat === "vent") {
+        valor = convertirVent(valor);
     }
 
 
@@ -1076,6 +1096,14 @@ return segments;
 function obtenirEscalaTemperatura(
 dades
 ) {
+
+if (unitatTemperatura === "F") {
+    return { min: 30, max: 100 };
+}
+
+if (unitatTemperatura === "K") {
+    return { min: 270, max: 310 };
+}
 
 
 if (dades.length === 0) {
@@ -1153,6 +1181,14 @@ return {
 function obtenirEscalaSensacio(
 dades
 ) {
+
+if (unitatTemperatura === "F") {
+    return { min: 30, max: 100 };
+}
+
+if (unitatTemperatura === "K") {
+    return { min: 270, max: 310 };
+}
 
 
 if (dades.length === 0) {
@@ -1384,6 +1420,16 @@ if (isNaN(numero)) {
 
 return numero.toFixed(2);
 
+}
+
+function formatarVent(valor) {
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+        return "--";
+    }
+
+    return numero.toFixed(obtenirDecimalsVent());
 }
 
 // =========================
@@ -1682,73 +1728,119 @@ return {
 // GRÀFICA DE VENT
 // =========================
 
-function crearConfiguracioGraficaVent() {
+function crearConfiguracioGraficaVent(dades) {
+    const segments = dividirEnSegments(dades, "vent");
 
+    const datasets = segments.map((segment) => ({
+        label: "Vent",
+        data: segment,
+        borderColor: "#4bc0c0",
+        backgroundColor: "#4bc0c0",
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        tension: 0.25,
+        fill: false,
+        showLine: true,
+        spanGaps: false
+    }));
 
-return {
+    let minX;
+    let maxX;
 
-    type: "line",
+    if (dades.length > 0) {
+        minX = dades[0].dataHora.getTime();
+        maxX = dades[dades.length - 1].dataHora.getTime();
+    }
 
-    data: {
+    // L'escala per defecte és equivalent a 0–5 km/h,
+    // adaptada a la unitat que l'usuari hagi seleccionat.
+    let maxVent;
+    if (unitatVent === "mach") {
+        const temperatura = Number.isFinite(temperaturaActualCelsius)
+            ? temperaturaActualCelsius
+            : 20;
+        maxVent = (5 / 3.6) / (331.4 + 0.6 * temperatura);
+    } else {
+        maxVent = convertirVent(5);
+    }
 
-        datasets: []
-    },
+    if (!Number.isFinite(maxVent) || maxVent <= 0) {
+        maxVent = 5;
+    }
 
-    options: {
-
-        responsive: true,
-
-        maintainAspectRatio: false,
-
-        animation: false,
-
-        plugins: {
-
-            title: {
-
-                display: true,
-
-                text: "Vent",
-
-                font: {
-
-                    size: 18,
-
-                    weight: "bold"
+    return {
+        type: "line",
+        data: {
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: {
+                mode: "nearest",
+                intersect: false
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Vent",
+                    font: {
+                        size: 18,
+                        weight: "bold"
+                    },
+                    padding: {
+                        bottom: 10
+                    }
                 },
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            if (!context.length) {
+                                return "";
+                            }
 
-                padding: {
-
-                    bottom: 10
+                            return obtenirFormatTooltip(context[0].parsed.x);
+                        },
+                        label: function(context) {
+                            return formatarVent(context.parsed.y) + " " + obtenirSimbolVent();
+                        }
+                    }
                 }
             },
-
-            legend: {
-
-                display: false
-            }
-        },
-
-        scales: {
-
-            x: {
-
-                display: false
-            },
-
-            y: {
-
-                min: 0,
-
-                max: 1,
-
-                display: false
+            scales: {
+                x: {
+                    type: "linear",
+                    min: minX,
+                    max: maxX,
+                    offset: false,
+                    ticks: {
+                        maxTicksLimit:
+                            periodeActual === "1h" ? 8 :
+                            periodeActual === "6h" ? 8 :
+                            periodeActual === "24h" ? 8 : 10,
+                        callback: function(value) {
+                            return obtenirFormatEix(value);
+                        }
+                    }
+                },
+                y: {
+                    min: 0,
+                    max: maxVent,
+                    display: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatarVent(value) + " " + obtenirSimbolVent();
+                        }
+                    }
+                }
             }
         }
-    }
-};
-
-
+    };
 }
 
 // =========================
@@ -1910,7 +2002,7 @@ graficaVent =
     new Chart(
         contextVent,
 
-        crearConfiguracioGraficaVent()
+        crearConfiguracioGraficaVent(dades)
     );
 
 
@@ -1988,6 +2080,7 @@ selectorUnitatVent.addEventListener(
 
 
         actualitzarUnitats();
+        actualitzarGrafiques();
     }
 );
 
