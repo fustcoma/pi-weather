@@ -487,7 +487,7 @@ try {
                 sensacio,
 
             dataHora:
-                dataHora
+                dataHora,
 			vent: vent,
         });
     }
