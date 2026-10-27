@@ -2,27 +2,26 @@
 
 # π Weather
 
-π Weather és una estació meteorològica intel·ligent amb Raspberry Pi Zero i sensor DHT11 per monitoritzar temperatura, humitat i sensació tèrmica en temps real.
+π Weather és una estació meteorològica amb Raspberry Pi Zero W que recull dades ambientals amb un sensor DHT11 i un anemòmetre casolà. El projecte permet consultar la temperatura, la humitat relativa, la sensació tèrmica calculada i la velocitat del vent des d'una pàgina web publicada amb GitHub Pages.
 
-El sistema mesura temperatura i humitat, calcula la sensació tèrmica, guarda un historial de les mesures i publica automàticament les dades a GitHub. Aquestes dades són utilitzades per una pàgina web publicada amb GitHub Pages.
+La Raspberry Pi fa les mesures, les desa en fitxers locals i les publica automàticament al repositori de GitHub. El DHT11 proporciona temperatura i humitat; l'anemòmetre utilitza un interruptor magnètic (*reed switch*) i imants per detectar el gir de les cassoletes i estimar la velocitat del vent. La velocitat calculada depèn del muntatge i del factor de calibratge, per tant s'ha de considerar una estimació fins que es contrasti amb un instrument de referència.
 
 ## Funcionament general
 
 El sistema està dividit en dues parts: la Raspberry Pi, que s'encarrega de mesurar i publicar les dades, i la pàgina web, que s'encarrega de mostrar-les.
 
 ```text
-DHT11
-  |
-  v
-Raspberry Pi Zero W
-  |
-  +--> temperatura.py
-          |
-          +--> pi.txt
-          |
-          +--> historial.csv
-          |
-          +--> Git commit
+DHT11 ------------------+
+                         |
+Anemòmetre -> reed switch +--> Raspberry Pi Zero W
+                              |
+                              +--> temperatura.py
+                                      |
+                                      +--> pi.txt
+                                      |
+                                      +--> historial.csv
+                                      |
+                                      +--> Git commit
           |
           +--> Git push
                   |
@@ -41,12 +40,13 @@ El funcionament és:
 1. La Raspberry Pi llegeix el DHT11 durant 60 segons.
 2. Es fa una lectura aproximadament cada 2 segons.
 3. Es calcula la mitjana de totes les lectures.
-4. Es calcula la sensació tèrmica.
-5. La dada actual es guarda a `pi.txt`.
-6. La nova mesura s'afegeix a `historial.csv`.
-7. Cada 5 minuts es fa un commit i un push a GitHub.
-8. La pàgina web comprova les dades cada 10 segons.
-9. Les gràfiques s'actualitzen automàticament quan apareixen noves dades.
+4. Es calcula la sensació tèrmica a partir de temperatura i humitat.
+5. Es compten els impulsos del *reed switch* de l'anemòmetre durant el període de mesura i se n'estima la velocitat del vent.
+6. Les dades actuals, inclosa la velocitat del vent, es guarden a `pi.txt`.
+7. La nova mesura s'afegeix a `historial.csv`.
+8. Cada 5 minuts aproximadament es fa un commit i un push a GitHub.
+9. La pàgina web comprova les dades cada 10 segons.
+10. Les gràfiques s'actualitzen automàticament quan apareixen noves dades.
 
 No cal tenir la pàgina web oberta a la Raspberry Pi.
 
@@ -58,8 +58,9 @@ No cal tenir la pàgina web oberta a la Raspberry Pi.
 
 * Raspberry Pi Zero W
 * Sensor DHT11
+* Anemòmetre de tres cassoletes amb coixinet 608, imants i interruptor magnètic (*reed switch*)
 * Connexió a Internet
-* Cables per connectar el sensor
+* Cables per connectar els sensors
 
 ## Software
 
@@ -109,6 +110,7 @@ pi-weather/
 +-- index.html
 +-- script.js
 +-- temperatura.py
++-- prova.py              # programa de prova independent de l'anemòmetre
 +-- pi.txt
 +-- historial.csv
 ```
@@ -132,7 +134,7 @@ S'encarrega de:
 
 ## `pi.txt`
 
-Conté les dades més recents.
+Conté les dades més recents. Amb la integració de l'anemòmetre, el format actual afegeix la velocitat del vent com a quarta línia i deixa la data i l'hora a la cinquena.
 
 Format:
 
@@ -140,6 +142,7 @@ Format:
 temperatura
 humitat
 sensacio
+vent_kmh
 data i hora
 ```
 
@@ -149,6 +152,7 @@ Exemple:
 26.60
 53.36
 29.00
+2.43
 06/09/2026 22:50:29
 ```
 
@@ -161,15 +165,15 @@ Conté totes les mesures.
 Format:
 
 ```text
-data,hora,temperatura,humitat,sensacio
+data,hora,temperatura,humitat,sensacio,vent_kmh
 ```
 
 Exemple:
 
 ```text
-data,hora,temperatura,humitat,sensacio
-06/09/2026,22:50:29,26.60,53.36,29.00
-06/09/2026,22:51:32,26.70,53.10,29.10
+data,hora,temperatura,humitat,sensacio,vent_kmh
+06/09/2026,22:50:29,26.60,53.36,29.00,2.43
+06/09/2026,22:51:32,26.70,53.10,29.10,2.10
 ```
 
 Si el fitxer no existeix, `temperatura.py` el crea automàticament amb la capçalera corresponent.
@@ -183,10 +187,12 @@ Mostra:
 * Temperatura actual.
 * Humitat actual.
 * Sensació tèrmica actual.
+* Velocitat actual del vent.
 * Data i hora de l'última actualització.
 * Gràfica de temperatura.
 * Gràfica d'humitat.
 * Gràfica de sensació tèrmica.
+* Gràfica de velocitat del vent, si aquesta sèrie està inclosa a la versió desplegada.
 
 La pàgina utilitza un disseny fosc.
 
@@ -428,6 +434,100 @@ git push
 ```
 
 Si el push funciona sense errors i no torna a demanar el token en les següents ocasions, Git està configurat correctament.
+
+---
+
+# Anemòmetre casolà
+
+## Per a què serveix
+
+L'anemòmetre mesura la velocitat aproximada del vent. El muntatge és un anemòmetre de tres cassoletes: quan el vent les empeny, el rotor gira. Els imants instal·lats a la part giratòria passen a prop d'un interruptor magnètic (*reed switch*), que obre o tanca el contacte. La Raspberry Pi detecta aquests canvis com a impulsos elèctrics.
+
+El programa compta els impulsos durant un interval conegut i, a partir del nombre d'impulsos i del factor de conversió/calibratge utilitzat pel muntatge, calcula una velocitat en km/h. La lectura no és una mesura meteorològica certificada: la forma de les cassoletes, la distància dels imants al *reed switch*, la fricció del coixinet i el calibratge influeixen en el resultat.
+
+## Peces utilitzades
+
+El muntatge s'ha basat en el disseny d'[alf45tar/Anemometer](https://github.com/alf45tar/Anemometer), adaptat per connectar-lo directament a una Raspberry Pi Zero W:
+
+* Coixinet 608 de 8 × 22 × 7 mm.
+* Tres insercions roscades M3 i tres cargols M3 × 10.
+* Interruptor magnètic (*reed switch*).
+* Dos imants de 6 × 3 mm.
+* Junta tòrica de 8 × 2 mm.
+* Cassoletes i peces impreses en 3D del disseny original.
+
+El crèdit del disseny original correspon a alf45tar. La lectura amb Raspberry Pi i la integració amb π Weather són l'adaptació d'aquest projecte.
+
+## Connexió del reed switch
+
+La connexió final utilitzada és:
+
+```text
+Raspberry Pi Zero W                 Reed switch
+-----------------------------------------------
+GPIO 8 (BCM) / pin físic 24  ------ un terminal
+GND / pin físic 20            ------ l'altre terminal
+```
+
+El programa identifica el pin pel número BCM `8`, no pel número físic. Això és important: `REED_PIN = 8` vol dir GPIO 8, que físicament és el pin 24 de la capçalera de 40 pins. El pin físic 20 és GND.
+
+El circuit utilitza la resistència *pull-up* interna del GPIO. Per això, el *reed switch* es connecta entre GPIO 8 i GND: no s'ha de connectar a 5 V. Quan el contacte està obert, l'entrada normalment es llegeix com a HIGH; quan el contacte es tanca, es llegeix com a LOW. El programa de prova o la llibreria poden expressar aquest estat com `is_pressed` o com un canvi d'estat.
+
+Abans d'alimentar el muntatge, comprova el número dels pins amb un esquema de la capçalera de la Raspberry Pi. No confonguis GPIO 8 amb el pin físic 8: són numeracions diferents.
+
+## Per a què serveix `prova.py`
+
+`prova.py` és un programa de diagnòstic independent per comprovar l'anemòmetre sense haver d'arrencar tot el sistema meteorològic ni publicar dades a GitHub. Serveix per aïllar els problemes del sensor:
+
+1. Llegeix l'entrada GPIO connectada al *reed switch*.
+2. Detecta els impulsos generats quan els imants passen pel contacte.
+3. Comprova que el senyal arriba realment a la Raspberry Pi.
+4. Permet observar si el rotor i el contacte magnètic funcionen abans d'integrar la lectura a `temperatura.py`.
+
+Durant les proves es va arribar a obtenir una sortida semblant a:
+
+```text
+Velocitat: 2.43 km/h
+```
+
+Aquesta línia és un exemple d'una lectura de prova, no una velocitat fixa ni una garantia de calibratge. Si `prova.py` detecta els impulsos però `temperatura.py` no, cal revisar la integració del codi principal. Si no detecta cap impuls, primer s'han de comprovar el cablejat, el contacte i els imants.
+
+Executa'l des del directori del projecte i amb el mateix entorn de Python que s'utilitza per a l'estació:
+
+```bash
+cd ~/pi-weather
+source ~/dht-env/bin/activate
+python prova.py
+```
+
+Atura la prova amb `Ctrl + C` si el programa continua llegint el sensor. `prova.py` no substitueix `temperatura.py`: és una eina de diagnòstic per provar l'anemòmetre de manera separada.
+
+## Paràmetres de mesura
+
+La configuració de mesura treballada per al projecte utilitza aquests intervals:
+
+```python
+REED_PIN = 8
+DURADA_MESURA = 60
+INTERVAL_LECTURA = 2
+INTERVAL_PUSH = 300
+```
+
+* `REED_PIN = 8`: GPIO BCM on està connectat el *reed switch*.
+* `DURADA_MESURA = 60`: durada del període de mesura, en segons.
+* `INTERVAL_LECTURA = 2`: interval de lectura/mostreig, en segons.
+* `INTERVAL_PUSH = 300`: interval aproximat entre publicacions a GitHub, és a dir, 300 segons o 5 minuts.
+
+El càlcul de la velocitat depèn del recompte d'impulsos i dels paràmetres de conversió del disseny. Per obtenir valors fiables, compara l'anemòmetre amb un anemòmetre de referència en diverses velocitats de vent i ajusta el factor de calibratge si cal.
+
+## Com s'integra a π Weather
+
+`temperatura.py` continua sent el programa principal. A més de llegir el DHT11, ara també recull la informació de l'anemòmetre i desa la velocitat del vent als fitxers de dades:
+
+* `pi.txt`: velocitat del vent a la quarta línia; la data i l'hora passen a la cinquena.
+* `historial.csv`: velocitat del vent al camp `vent_kmh`, després de les dades de temperatura, humitat i sensació tèrmica.
+
+La pàgina web només pot mostrar les dades de vent si el seu `script.js` llegeix el nou camp i `index.html` conté l'element visual corresponent. Si la Raspberry Pi ja calcula el vent però la web no el mostra, comprova primer el contingut dels fitxers i després que la versió de la web publicada inclogui aquests canvis.
 
 ---
 
@@ -997,6 +1097,7 @@ Exemple:
 26.60
 53.36
 29.00
+2.43
 06/09/2026 22:50:29
 ```
 
@@ -1287,6 +1388,47 @@ Comprovar també que `historial.csv` contingui una nova línia:
 ```bash
 tail historial.csv
 ```
+
+---
+
+## L'anemòmetre no detecta impulsos
+
+Durant el muntatge es van provar connexions i programes de diagnòstic separats. Si no apareix cap impuls:
+
+1. Comprova que el *reed switch* estigui connectat entre GPIO 8 (pin físic 24) i GND (per exemple, pin físic 20).
+2. Assegura't que el programa utilitzi numeració BCM (`REED_PIN = 8`) i no el número físic del connector.
+3. Apropa els imants al *reed switch* i gira el rotor a poc a poc. Els imants han de passar prou a prop del contacte i amb l'orientació adequada.
+4. Comprova que els terminals del *reed switch* i els cables no estiguin trencats. Si tens un multímetre, utilitza el mode de continuïtat per veure si el contacte es tanca quan hi apropes un imant.
+5. Prova primer el cable entre GPIO i GND. Si el programa detecta el canvi en tancar el circuit manualment però no quan gira l'anemòmetre, el problema probablement és mecànic o magnètic: posició dels imants, distància, orientació o contacte.
+6. Executa `prova.py` abans de depurar el programa principal.
+
+En les proves es va observar que tancar el circuit entre el GPIO i GND podia activar l'entrada, mentre que el conjunt d'imants i *reed switch* no sempre generava impulsos. Això ajuda a separar un problema de programari o de pin d'un problema de posicionament del sensor.
+
+## `ModuleNotFoundError` en instal·lar o importar `gpiozero`
+
+Durant les proves va aparèixer un error del tipus `ModuleNotFoundError` per a `gpiozero`, tot i que s'havia intentat instal·lar la llibreria. En aquests casos, el més important és assegurar-se que la instal·lació i l'execució utilitzen el mateix Python: activar `~/dht-env` abans d'instal·lar o executar res.
+
+```bash
+source ~/dht-env/bin/activate
+python -m pip show gpiozero
+python -c "import sys; print(sys.executable)"
+```
+
+Si `pip show` no troba el paquet, instal·la'l en aquest mateix entorn:
+
+```bash
+python -m pip install gpiozero
+```
+
+Després torna a executar `prova.py` des de l'entorn activat. Si l'error continua, comprova la ruta de Python mostrada per `sys.executable` i no barregis `pip` d'un Python amb l'executable d'un altre. Aquest problema és diferent d'un error de cablejat: un mòdul que no s'importa impedeix que el programa comenci, mentre que un sensor que no detecta impulsos requereix revisar el circuit i el muntatge.
+
+## El programa mostra velocitats estranyes o zero
+
+* Comprova que els imants passin pel *reed switch* una vegada per cada posició prevista pel disseny.
+* Gira el rotor manualment i observa si el recompte d'impulsos canvia.
+* Comprova que no hi hagi fregament excessiu al coixinet 608.
+* Revisa el factor de conversió/calibratge emprat pel codi. Un valor de prova com `2.43 km/h` només confirma que el programa ha produït una lectura; no demostra per si sol que la velocitat sigui exacta.
+* Evita interpretar zero com a prova definitiva que no hi ha vent: també pot indicar que el rotor no gira lliurement o que el *reed switch* no detecta els imants.
 
 ---
 
